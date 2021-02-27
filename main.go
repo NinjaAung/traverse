@@ -8,21 +8,19 @@ import (
 	"github.com/gocolly/colly"
 )
 
-// Repo is a representation of a github repo directory
-type Repo struct {
-	Name   string
-	Route  string
-	Commit int64
-	Dirs   []Dir
-	Files  []string
-}
-
-// Dir is a representation of a directory and it's content in a repo
+// Dir is an embedded struct of folders in a repo
 type Dir struct {
 	Name  string
-	route string
+	Route string
 	Dirs  []Dir
 	Files []string
+}
+
+// Repo is a representation of a github repo directory
+type Repo struct {
+	Name    string
+	Commits int64
+	Dir
 }
 
 func check(err error) {
@@ -35,8 +33,11 @@ func main() {
 
 	repoName := "Make-School-Courses/SPD-2.31-Testing-and-Architecture"
 	baseURL := "https://github.com/" + repoName
-	repo := Repo{Name: repoName, Route: "master"}
+	repo := Repo{Name: repoName}
+	dir := Dir{}
 	initRepo(baseURL, &repo)
+	searchFolder(baseURL, &dir)
+	repo.Dir = dir
 	fmt.Println(repo)
 
 }
@@ -46,19 +47,31 @@ func initRepo(baseURL string, repo *Repo) {
 	c.OnHTML("a[data-pjax] span strong", func(e *colly.HTMLElement) {
 		commit, err := strconv.ParseInt(string(e.Text), 10, 16)
 		check(err)
-		repo.Commit = commit
+		repo.Commits = commit
 	})
+	c.Visit(baseURL)
+
+}
+
+func searchFolder(link string, dir *Dir) {
+	c := colly.NewCollector()
 	c.OnHTML("span a.js-navigation-open", func(e *colly.HTMLElement) {
-		fileType := strings.Split(e.Attr("href"), "/")[3]
+		href := e.Attr("href")
+		link := strings.Split(href, "/")
+		dir.Route = strings.Join(link[4:len(link)-1], "/")
+		routeType := strings.Split(href, "/")[3]
 		title := e.Attr("title")
-		if fileType == "blob" {
-			repo.Files = append(repo.Files, title)
-		} else {
-			repo.Dirs = append(repo.Dirs, Dir{Name: title})
+		if routeType == "blob" {
+			dir.Files = append(dir.Files, title)
+		} else if routeType == "tree" {
+			newDir := Dir{Name: title}
+			searchFolder("https://github.com"+href, &newDir)
+			dir.Dirs = append(dir.Dirs, newDir)
+
 		}
 
 	})
-	c.Visit(baseURL)
+	c.Visit(link)
 
 }
 
