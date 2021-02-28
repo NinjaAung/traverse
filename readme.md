@@ -6,7 +6,7 @@ Traverse any git repo through terminal
 </p>
 <p align="center">
   <a>
-    <a href="https://goreportcard.com/badge/github.com/ninjaaung/traverse" />
+    <a href="https://goreportcard.com/report/github.com/NinjaAung/traverse" />
     <img alt="commits" src="https://goreportcard.com/badge/github.com/ninjaaung/traverse" target="_blank" />
     <a href="https://github.com/ninjaaung/traverse/commits/master">
     <img alt="commits" src="https://img.shields.io/github/commit-activity/w/ninjaaung/traverse?color=green" target="_blank" />
