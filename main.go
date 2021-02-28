@@ -60,18 +60,22 @@ func isFileExists(filePath string) bool {
 
 func saveRepo(name, location string, repo *Repo) {
 	var repos []*Repo
-	r := []*Repo{repo}
 	filePath := filepath.Join(location, name)
 	if !isFileExists(filePath) {
 		f, err := os.Create(filePath)
 		check(err)
-		repoJSON, err := json.MarshalIndent(r, "", "  ")
+		repoJSON, err := json.MarshalIndent([]*Repo{repo}, "", "  ")
 		check(err)
 		f.Write(repoJSON)
 		f.Close()
 		return
 	}
+	updateJSON(filePath, repos, repo)
+}
+
+func updateJSON(filePath string, repos []*Repo, repo *Repo) {
 	f, _ := ioutil.ReadFile(filePath)
+	r := []*Repo{repo}
 	json.Unmarshal(f, &repos)
 	for i, repo := range repos {
 		if repo.Name == repo.Name {
