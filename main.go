@@ -1,9 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gocolly/colly"
 )
@@ -12,8 +16,8 @@ import (
 type Dir struct {
 	Name  string
 	Route string
-	Dirs  []Dir
 	Files []string
+	Dirs  []Dir
 }
 
 // Repo is a representation of a github repo directory
@@ -34,11 +38,33 @@ func main() {
 	repoName := "Make-School-Courses/SPD-2.31-Testing-and-Architecture"
 	baseURL := "https://github.com/" + repoName
 	repo := Repo{Name: repoName}
-	dir := Dir{}
+	dir := Dir{Route: "master"}
+	start := time.Now()
 	initRepo(baseURL, &repo)
 	searchFolder(baseURL, &dir)
 	repo.Dir = dir
-	fmt.Println(repo)
+	check(err)
+	fmt.Printf("%s\n", repoJSON)
+	elapsed := time.Since(start)
+	fmt.Println(elapsed)
+
+}
+
+func isFileExists(filePath string) bool {
+	_, err := os.Open(filePath)
+	return err == nil
+}
+
+func saveRepo(name, location string, repo *Repo) {
+	filePath := filepath.Join(location, name)
+	if !isFileExists(filePath) {
+		f, err := os.Create(filePath)
+		check(err)
+		repoJSON, err := json.MarshalIndent(repo, "", "  ")
+		check(err)
+		f.Write(repoJSON)
+		return
+	}
 
 }
 
