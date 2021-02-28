@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -33,6 +34,10 @@ func check(err error) {
 	}
 }
 
+func raw(path string) string {
+	return "https://raw.githubusercontent.com/" + path
+}
+
 func main() {
 
 	repoName := "Make-School-Courses/SPD-2.31-Testing-and-Architecture"
@@ -43,8 +48,6 @@ func main() {
 	initRepo(baseURL, &repo)
 	searchFolder(baseURL, &dir)
 	repo.Dir = dir
-	check(err)
-	fmt.Printf("%s\n", repoJSON)
 	elapsed := time.Since(start)
 	fmt.Println(elapsed)
 
@@ -56,16 +59,38 @@ func isFileExists(filePath string) bool {
 }
 
 func saveRepo(name, location string, repo *Repo) {
+	var repos []*Repo
+	r := []*Repo{repo}
 	filePath := filepath.Join(location, name)
 	if !isFileExists(filePath) {
 		f, err := os.Create(filePath)
 		check(err)
-		repoJSON, err := json.MarshalIndent(repo, "", "  ")
+		repoJSON, err := json.MarshalIndent(r, "", "  ")
 		check(err)
 		f.Write(repoJSON)
+		f.Close()
 		return
 	}
+	f, _ := ioutil.ReadFile(filePath)
+	json.Unmarshal(f, &repos)
+	for i, repo := range repos {
+		if repo.Name == repo.Name {
+			if i > 4 {
+				repos = repos[:4]
+			} else {
+				repos = append(repos[:i], repos[i+1:]...)
 
+			}
+			break
+		}
+	}
+	repos = append(r, repos...)
+	r = r[:5]
+	repoJSON, err := json.MarshalIndent(repos, "", "  ")
+	check(err)
+	json, err := os.Open(filePath)
+	json.Write(repoJSON)
+	check(err)
 }
 
 func initRepo(baseURL string, repo *Repo) {
@@ -99,8 +124,4 @@ func searchFolder(link string, dir *Dir) {
 	})
 	c.Visit(link)
 
-}
-
-func raw(path string) string {
-	return "https://raw.githubusercontent.com/" + path
 }
