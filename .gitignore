@@ -16,6 +16,7 @@
 
 # Misc
 test/
+test.*
 .DS_store
 .vscode/
 

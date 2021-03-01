@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -40,13 +39,15 @@ func raw(path string) string {
 
 func main() {
 
-	repoName := "Make-School-Courses/SPD-2.31-Testing-and-Architecture"
+	repoName := "NinjaAung/traverse"
 	baseURL := "https://github.com/" + repoName
 	repo := Repo{Name: repoName}
 	dir := Dir{Route: "master"}
 	start := time.Now()
 	initRepo(baseURL, &repo)
 	searchFolder(baseURL, &dir)
+	repo.Dir = dir
+	saveRepo("./test.json", &repo)
 	repo.Dir = dir
 	elapsed := time.Since(start)
 	fmt.Println(elapsed)
@@ -58,9 +59,7 @@ func isFileExists(filePath string) bool {
 	return err == nil
 }
 
-func saveRepo(name, location string, repo *Repo) {
-	var repos []*Repo
-	filePath := filepath.Join(location, name)
+func saveRepo(filePath string, repo *Repo) {
 	if !isFileExists(filePath) {
 		f, err := os.Create(filePath)
 		check(err)
@@ -70,30 +69,51 @@ func saveRepo(name, location string, repo *Repo) {
 		f.Close()
 		return
 	}
-	updateJSON(filePath, repos, repo)
+	updateJSON(filePath, repo)
 }
 
-func updateJSON(filePath string, repos []*Repo, repo *Repo) {
+func updateJSON(filePath string, repo *Repo) {
+	var repos []*Repo
 	f, _ := ioutil.ReadFile(filePath)
 	r := []*Repo{repo}
 	json.Unmarshal(f, &repos)
+
+	if len(repos) == 0 {
+		return
+	}
+	fillerSize := 5 - len(repos)
+	filler := make([]*Repo, fillerSize)
+	repos = append(repos, filler...)
+
 	for i, repo := range repos {
-		if repo.Name == repo.Name {
+		if i >= fillerSize {
+			break
+		}
+		if repo.Name == r[0].Name {
 			if i > 4 {
 				repos = repos[:4]
 			} else {
 				repos = append(repos[:i], repos[i+1:]...)
-
 			}
 			break
 		}
 	}
 	repos = append(r, repos...)
-	r = r[:5]
+	fmt.Println(fillerSize)
+	fmt.Println(repos[:fillerSize])
+	if fillerSize > 0 {
+		repos = repos[:fillerSize]
+	}
+	if len(repos) >= 5 {
+		repos = repos[:5]
+	}
 	repoJSON, err := json.MarshalIndent(repos, "", "  ")
 	check(err)
-	json, err := os.Open(filePath)
+	json, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+	fmt.Println(string(repoJSON))
+	json.Truncate(0)
 	json.Write(repoJSON)
+	json.Close()
 	check(err)
 }
 
