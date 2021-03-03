@@ -38,8 +38,7 @@ func raw(path string) string {
 }
 
 func main() {
-
-	repoName := "NinjaAung/traverse"
+	repoName := "torvalds/linux"
 	baseURL := "https://github.com/" + repoName
 	repo := Repo{Name: repoName}
 	dir := Dir{Route: "master"}
@@ -48,28 +47,29 @@ func main() {
 	searchFolder(baseURL, &dir)
 	repo.Dir = dir
 	saveRepo("./test.json", &repo)
-	repo.Dir = dir
 	elapsed := time.Since(start)
 	fmt.Println(elapsed)
 
 }
 
-func isFileExists(filePath string) bool {
+func isFileExists(filePath string) error {
 	_, err := os.Open(filePath)
-	return err == nil
+	return err
 }
 
-func saveRepo(filePath string, repo *Repo) {
-	if !isFileExists(filePath) {
+func saveRepo(filePath string, repo *Repo) error {
+	if isFileExists(filePath) != nil {
 		f, err := os.Create(filePath)
 		check(err)
 		repoJSON, err := json.MarshalIndent([]*Repo{repo}, "", "  ")
 		check(err)
 		f.Write(repoJSON)
 		f.Close()
-		return
+	} else {
+		return isFileExists(filePath)
 	}
 	updateJSON(filePath, repo)
+	return nil
 }
 
 func updateJSON(filePath string, repo *Repo) {
@@ -77,7 +77,6 @@ func updateJSON(filePath string, repo *Repo) {
 	f, _ := ioutil.ReadFile(filePath)
 	r := []*Repo{repo}
 	json.Unmarshal(f, &repos)
-
 	if len(repos) == 0 {
 		return
 	}
@@ -99,8 +98,6 @@ func updateJSON(filePath string, repo *Repo) {
 		}
 	}
 	repos = append(r, repos...)
-	fmt.Println(fillerSize)
-	fmt.Println(repos[:fillerSize])
 	if fillerSize > 0 {
 		repos = repos[:fillerSize]
 	}
@@ -110,7 +107,6 @@ func updateJSON(filePath string, repo *Repo) {
 	repoJSON, err := json.MarshalIndent(repos, "", "  ")
 	check(err)
 	json, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
-	fmt.Println(string(repoJSON))
 	json.Truncate(0)
 	json.Write(repoJSON)
 	json.Close()
@@ -120,9 +116,13 @@ func updateJSON(filePath string, repo *Repo) {
 func initRepo(baseURL string, repo *Repo) {
 	c := colly.NewCollector()
 	c.OnHTML("a[data-pjax] span strong", func(e *colly.HTMLElement) {
-		commit, err := strconv.ParseInt(string(e.Text), 10, 16)
+		commitsStr := e.Text
+		if strings.Contains(commitsStr, ",") {
+			commitsStr = strings.Join(strings.Split(commitsStr, ","), "")
+		}
+		commits, err := strconv.ParseInt(commitsStr, 10, 64)
 		check(err)
-		repo.Commits = commit
+		repo.Commits = commits
 	})
 	c.Visit(baseURL)
 
@@ -147,5 +147,4 @@ func searchFolder(link string, dir *Dir) {
 
 	})
 	c.Visit(link)
-
 }
