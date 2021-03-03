@@ -14,9 +14,12 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
+
+
+
 # Misc
 test/
 test.*
 .DS_store
 .vscode/
-
+main.go

@@ -1,13 +1,11 @@
-package main
+package traverse
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gocolly/colly"
 )
@@ -37,27 +35,13 @@ func raw(path string) string {
 	return "https://raw.githubusercontent.com/" + path
 }
 
-func main() {
-	repoName := "torvalds/linux"
-	baseURL := "https://github.com/" + repoName
-	repo := Repo{Name: repoName}
-	dir := Dir{Route: "master"}
-	start := time.Now()
-	initRepo(baseURL, &repo)
-	searchFolder(baseURL, &dir)
-	repo.Dir = dir
-	saveRepo("./test.json", &repo)
-	elapsed := time.Since(start)
-	fmt.Println(elapsed)
-
-}
-
 func isFileExists(filePath string) error {
 	_, err := os.Open(filePath)
 	return err
 }
 
-func saveRepo(filePath string, repo *Repo) error {
+// SaveRepo saves the Repo object to a json file
+func SaveRepo(filePath string, repo *Repo) {
 	if isFileExists(filePath) != nil {
 		f, err := os.Create(filePath)
 		check(err)
@@ -66,10 +50,8 @@ func saveRepo(filePath string, repo *Repo) error {
 		f.Write(repoJSON)
 		f.Close()
 	} else {
-		return isFileExists(filePath)
+		updateJSON(filePath, repo)
 	}
-	updateJSON(filePath, repo)
-	return nil
 }
 
 func updateJSON(filePath string, repo *Repo) {
@@ -99,7 +81,7 @@ func updateJSON(filePath string, repo *Repo) {
 	}
 	repos = append(r, repos...)
 	if fillerSize > 0 {
-		repos = repos[:fillerSize]
+		repos = repos[:5-fillerSize]
 	}
 	if len(repos) >= 5 {
 		repos = repos[:5]
@@ -113,7 +95,8 @@ func updateJSON(filePath string, repo *Repo) {
 	check(err)
 }
 
-func initRepo(baseURL string, repo *Repo) {
+// InitRepo ...
+func InitRepo(baseURL string, repo *Repo) {
 	c := colly.NewCollector()
 	c.OnHTML("a[data-pjax] span strong", func(e *colly.HTMLElement) {
 		commitsStr := e.Text
@@ -128,8 +111,10 @@ func initRepo(baseURL string, repo *Repo) {
 
 }
 
-func searchFolder(link string, dir *Dir) {
-	c := colly.NewCollector()
+// SearchFolder ...
+func SearchFolder(link string, dir *Dir) {
+	c := colly.NewCollector(colly.Async(true))
+	c.Limit(&colly.LimitRule{DomainGlob: "*", Parallelism: 4})
 	c.OnHTML("span a.js-navigation-open", func(e *colly.HTMLElement) {
 		href := e.Attr("href")
 		link := strings.Split(href, "/")
@@ -140,11 +125,11 @@ func searchFolder(link string, dir *Dir) {
 			dir.Files = append(dir.Files, title)
 		} else if routeType == "tree" {
 			newDir := Dir{Name: title}
-			searchFolder("https://github.com"+href, &newDir)
+			SearchFolder("https://github.com"+href, &newDir)
 			dir.Dirs = append(dir.Dirs, newDir)
-
 		}
 
 	})
 	c.Visit(link)
+	c.Wait()
 }
