@@ -12,14 +12,10 @@
 *.out
 
 # Dependency directories (remove the comment below to include it)
-# vendor/
-
-
-
+vendor/
 
 # Misc
 test/
 test.*
 .DS_store
 .vscode/
-main.go

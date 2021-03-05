@@ -4,11 +4,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
-	"strconv"
-	"strings"
-	"sync"
-
-	"github.com/gocolly/colly"
 )
 
 // Dir is an embedded struct of folders in a repo
@@ -51,8 +46,8 @@ func isFileExists(filePath string) error {
 	return err
 }
 
-// SaveRepo saves the Repo object to a json file
-func SaveRepo(filePath string, repo *Repo) {
+// SaveToJSON saves the Repo object to a json file
+func (repo *Repo) SaveToJSON(filePath string) {
 	if isFileExists(filePath) != nil {
 		f, err := os.Create(filePath)
 		check(err)
@@ -63,6 +58,7 @@ func SaveRepo(filePath string, repo *Repo) {
 	} else {
 		updateJSON(filePath, repo)
 	}
+
 }
 
 func updateJSON(filePath string, repo *Repo) {
@@ -104,47 +100,4 @@ func updateJSON(filePath string, repo *Repo) {
 	json.Write(repoJSON)
 	json.Close()
 	check(err)
-}
-
-// InitRepo ...
-func InitRepo(baseURL string, repo *Repo) {
-	c := colly.NewCollector()
-	c.OnHTML("a[data-pjax] span strong", func(e *colly.HTMLElement) {
-		commitsStr := e.Text
-		if strings.Contains(commitsStr, ",") {
-			commitsStr = strings.Join(strings.Split(commitsStr, ","), "")
-		}
-		commits, err := strconv.ParseInt(commitsStr, 10, 64)
-		check(err)
-		repo.Commits = commits
-	})
-	c.Visit(baseURL)
-
-}
-
-// SearchFolder ...
-func SearchFolder(link string, dir *Dir) {
-	var wg sync.WaitGroup
-	defer wg.Done()
-	c := colly.NewCollector(colly.Async(true))
-	c.Limit(&colly.LimitRule{DomainGlob: "*", Parallelism: 4})
-	c.OnHTML("span a.js-navigation-open", func(e *colly.HTMLElement) {
-		href := e.Attr("href")
-		link := strings.Split(href, "/")
-		dir.Route = strings.Join(link[4:len(link)-1], "/")
-		routeType := strings.Split(href, "/")[3]
-		title := e.Attr("title")
-
-		if routeType == "tree" {
-			wg.Add(1)
-			newDir := Dir{Name: title}
-			SearchFolder("https://github.com"+href, &newDir)
-			dir.Dirs = append(dir.Dirs, &newDir)
-		} else if routeType == "blob" {
-			dir.Files = append(dir.Files, title)
-		}
-
-	})
-	c.Visit(link)
-	c.Wait()
 }
