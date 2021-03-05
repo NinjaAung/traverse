@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/gocolly/colly"
 )
@@ -15,7 +16,17 @@ type Dir struct {
 	Name  string
 	Route string
 	Files []string
-	Dirs  []Dir
+	Dirs  []*Dir
+}
+
+//NewDir ...
+func NewDir(name, route string) Dir {
+	return Dir{
+		Name:  name,
+		Route: route,
+		Files: []string{},
+		Dirs:  []*Dir{},
+	}
 }
 
 // Repo is a representation of a github repo directory
@@ -113,6 +124,8 @@ func InitRepo(baseURL string, repo *Repo) {
 
 // SearchFolder ...
 func SearchFolder(link string, dir *Dir) {
+	var wg sync.WaitGroup
+	defer wg.Done()
 	c := colly.NewCollector(colly.Async(true))
 	c.Limit(&colly.LimitRule{DomainGlob: "*", Parallelism: 4})
 	c.OnHTML("span a.js-navigation-open", func(e *colly.HTMLElement) {
@@ -121,12 +134,14 @@ func SearchFolder(link string, dir *Dir) {
 		dir.Route = strings.Join(link[4:len(link)-1], "/")
 		routeType := strings.Split(href, "/")[3]
 		title := e.Attr("title")
-		if routeType == "blob" {
-			dir.Files = append(dir.Files, title)
-		} else if routeType == "tree" {
+
+		if routeType == "tree" {
+			wg.Add(1)
 			newDir := Dir{Name: title}
 			SearchFolder("https://github.com"+href, &newDir)
-			dir.Dirs = append(dir.Dirs, newDir)
+			dir.Dirs = append(dir.Dirs, &newDir)
+		} else if routeType == "blob" {
+			dir.Files = append(dir.Files, title)
 		}
 
 	})
