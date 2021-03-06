@@ -29,10 +29,6 @@ func main() {
 
 }
 
-var (
-	downloads = []string
-)
-
 func tra(dir traverse.Dir) func() {
 	reader := bufio.NewReader(os.Stdin)
 	fileStart := 0
