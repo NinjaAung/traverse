@@ -8,6 +8,7 @@ import (
 	"runtime"
 
 	"github.com/NinjaAung/traverse/scraping"
+	"github.com/NinjaAung/traverse/traverse"
 )
 
 func main() {
@@ -26,6 +27,7 @@ func main() {
 		}
 		fmt.Println(repo)
 		repo.SaveToJSON(filePath)
+		traverse.Tra(repo.Dir)
 		os.Exit(0)
 	}
 }
