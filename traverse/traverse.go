@@ -75,14 +75,17 @@ func updateJSON(filePath string, repo *Repo) {
 	r := []*Repo{repo}
 	json.Unmarshal(f, &repos)
 	if len(repos) == 0 {
+		fmt.Errorf("The file is empty")
 		return
 	}
+
 	fillerSize := 5 - len(repos)
 	filler := make([]*Repo, fillerSize)
 	repos = append(repos, filler...)
 
+	// Checks if repo is already in list
 	for i, repo := range repos {
-		if i >= fillerSize {
+		if i >= 5-fillerSize {
 			break
 		}
 		if repo.Name == r[0].Name {
@@ -94,14 +97,20 @@ func updateJSON(filePath string, repo *Repo) {
 			break
 		}
 	}
+
 	repos = append(r, repos...)
-	if fillerSize > 0 {
-		repos = repos[:5-fillerSize]
+	var jsonRepo []*Repo
+	for i := range repos {
+		if repos[i] == nil {
+			break
+		}
+		jsonRepo = append(jsonRepo, repos[i])
 	}
-	if len(repos) >= 5 {
-		repos = repos[:5]
+	if len(jsonRepo) >= 5 {
+		jsonRepo = jsonRepo[:5]
 	}
-	repoJSON, err := json.MarshalIndent(repos, "", "  ")
+
+	repoJSON, err := json.MarshalIndent(jsonRepo, "", "  ")
 	check(err)
 	json, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
 	json.Truncate(0)
@@ -121,8 +130,26 @@ func clear() {
 }
 
 //ReadRecent
-func ReadRecent() {
+func ReadRecent(filePath string) error {
+	reader := bufio.NewReader(os.Stdin)
+	var repos []*Repo
+	if isFileExists(filePath) != nil {
+		return fmt.Errorf("file dosen't exist")
+	}
+	f, _ := ioutil.ReadFile(filePath)
+	json.Unmarshal(f, &repos)
+	fmt.Println("Recent repos:")
+	for  i, v := range repos {
+		fmt.Printf("%d. %s\n",i+1,v.Name)
+	}
+	fmt.Print(": ")
+	option, _ := reader.ReadString('\n')
+	optionNum, _ := strconv.ParseInt(strings.TrimSpace(option), 10, 64)
+	updateJSON(filePath,repos[optionNum-1])
+	Tra(repos[optionNum-1].Dir)
 
+
+	return nil 
 }
 
 //Tra ...

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -25,11 +24,11 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println(repo)
 		repo.SaveToJSON(filePath)
 		traverse.Tra(repo.Dir)
 		os.Exit(0)
 	}
-
+	traverse.ReadRecent(filePath)
+	
 	os.Exit(0)
 }
