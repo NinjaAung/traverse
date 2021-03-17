@@ -2,6 +2,7 @@ package traverse
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 )
@@ -49,6 +50,7 @@ func isFileExists(filePath string) error {
 // SaveToJSON saves the Repo object to a json file
 func (repo *Repo) SaveToJSON(filePath string) {
 	if isFileExists(filePath) != nil {
+		fmt.Println("Creating File")
 		f, err := os.Create(filePath)
 		check(err)
 		repoJSON, err := json.MarshalIndent([]*Repo{repo}, "", "  ")
@@ -56,6 +58,7 @@ func (repo *Repo) SaveToJSON(filePath string) {
 		f.Write(repoJSON)
 		f.Close()
 	} else {
+		fmt.Println("Updating File")
 		updateJSON(filePath, repo)
 	}
 

@@ -27,7 +27,7 @@ func check(err error) {
 func Run(repoName string) (traverse.Repo, error) {
 	resp, _ := http.Get("https://github.com/" + repoName)
 	if resp.StatusCode == 404 {
-		return traverse.Repo{}, fmt.Errorf("Repo dosen't exsist, spelled incorrectly, or repo is private")
+		return traverse.Repo{}, fmt.Errorf("repo dosen't exsist, spelled incorrectly, or repo is private")
 	}
 	for i := 0; i < 100; i++ {
 		go searchworker(foldersChan)
@@ -41,7 +41,7 @@ func Run(repoName string) (traverse.Repo, error) {
 	wg.Wait()
 	close(foldersChan)
 	repo.Dir = dir
-	fmt.Println(time.Since(start))
+	fmt.Println("Repo Collected took: ", time.Since(start))
 	return repo, nil
 }
 
