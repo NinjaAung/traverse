@@ -29,6 +29,6 @@ func main() {
 		os.Exit(0)
 	}
 	traverse.ReadRecent(filePath)
-	
+
 	os.Exit(0)
 }

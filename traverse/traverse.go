@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Dir is an embedded struct of folders in a repo
@@ -69,14 +70,13 @@ func (repo *Repo) SaveToJSON(filePath string) {
 
 }
 
-func updateJSON(filePath string, repo *Repo) {
+func updateJSON(filePath string, repo *Repo) error {
 	var repos []*Repo
 	f, _ := ioutil.ReadFile(filePath)
 	r := []*Repo{repo}
 	json.Unmarshal(f, &repos)
 	if len(repos) == 0 {
-		fmt.Errorf("The file is empty")
-		return
+		return fmt.Errorf("the file is empty")
 	}
 
 	fillerSize := 5 - len(repos)
@@ -117,6 +117,7 @@ func updateJSON(filePath string, repo *Repo) {
 	json.Write(repoJSON)
 	json.Close()
 	check(err)
+	return nil
 }
 
 func clear() {
@@ -139,21 +140,29 @@ func ReadRecent(filePath string) error {
 	f, _ := ioutil.ReadFile(filePath)
 	json.Unmarshal(f, &repos)
 	fmt.Println("Recent repos:")
-	for  i, v := range repos {
-		fmt.Printf("%d. %s\n",i+1,v.Name)
+	for i, v := range repos {
+		fmt.Printf("%d. %s\n", i+1, v.Name)
 	}
 	fmt.Print(": ")
 	option, _ := reader.ReadString('\n')
 	optionNum, _ := strconv.ParseInt(strings.TrimSpace(option), 10, 64)
-	updateJSON(filePath,repos[optionNum-1])
+	updateJSON(filePath, repos[optionNum-1])
+	clear()
 	Tra(repos[optionNum-1].Dir)
 
-
-	return nil 
+	return nil
 }
 
-//Tra ...
+var (
+	path     []Dir
+	downList []string
+)
+
+//Tra this is an example of a traversal
 func Tra(dir Dir) func() {
+	if len(path) == 0 {
+		path = append(path, dir)
+	}
 	reader := bufio.NewReader(os.Stdin)
 	fileStart := 0
 
@@ -166,26 +175,36 @@ func Tra(dir Dir) func() {
 	for i, file := range dir.Files {
 		fmt.Printf("%d. %s\n", fileStart+i+1, file)
 	}
+	fmt.Printf("Have %d items to download\n", len(downList))
 	fmt.Print(": ")
 	option, _ := reader.ReadString('\n')
 	optionNum, _ := strconv.ParseInt(strings.TrimSpace(option), 10, 64)
 	if optionNum == 0 {
+		// cd ..
 		if dir.Route == "master" {
 			fmt.Print("This is root")
 			clear()
 			return Tra(dir)
 		}
-		fmt.Println("Went back")
+		clear()
+		path = path[:len(path)-1]
+		pop := path[len(path)-1]
+		return Tra(pop)
 
 	} else if optionNum < int64(fileStart)+1 {
-		fmt.Printf("Folder: %s\n", dir.Dirs[int(optionNum)-1].Name)
 		clear()
+		// cd
+		fmt.Printf("Folder: %s\n", dir.Dirs[int(optionNum)-1].Name)
+		path = append(path, *dir.Dirs[int(optionNum)-1])
+		fmt.Println(len(path))
 		return Tra(*dir.Dirs[int(optionNum)-1])
 
 	} else if optionNum >= int64(fileStart)+1 {
-		index := int(optionNum) - 1
-		fmt.Printf("File: %s", dir.Files[index-fileStart])
+		time.Sleep(time.Second * 5)
 		clear()
+		// add files
+		index := int(optionNum) - 1
+		fmt.Printf("File: %s added\n", dir.Files[index-fileStart])
 		return Tra(dir)
 
 	}
