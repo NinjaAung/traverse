@@ -30,4 +30,6 @@ func main() {
 		traverse.Tra(repo.Dir)
 		os.Exit(0)
 	}
+
+	os.Exit(0)
 }

@@ -120,6 +120,11 @@ func clear() {
 
 }
 
+//ReadRecent
+func ReadRecent() {
+
+}
+
 //Tra ...
 func Tra(dir Dir) func() {
 	reader := bufio.NewReader(os.Stdin)
