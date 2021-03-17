@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -179,12 +178,26 @@ func Tra(dir Dir, name string) func() {
 	fmt.Printf("Have %d items to download\n", len(downList))
 	fmt.Print(": ")
 	option, _ := reader.ReadString('\n')
-	if option == "download" {
+	if strings.TrimSpace(option) == "download" {
 		clear()
+
 		fmt.Printf("Downloading %d files in current dir\n", len(downList))
+		for i := range downList {
+			fmt.Println(downList[i])
+
+			cmd := exec.Command("curl", "--remote-name", downList[i])
+			if runtime.GOOS == "windows" {
+				split := strings.Split(downList[i], "/")
+				name := split[len(split)-1]
+				cmd = exec.Command("powershell", "curl", downList[i], "-Outfile", name)
+			}
+			cmd.Stdout = os.Stdout
+			cmd.Run()
+		}
 		os.Exit(0)
 
 	}
+
 	optionNum, _ := strconv.ParseInt(strings.TrimSpace(option), 10, 64)
 	if optionNum == 0 {
 		// cd ..
@@ -211,7 +224,7 @@ func Tra(dir Dir, name string) func() {
 		// add files
 		index := int(optionNum) - 1
 		fmt.Printf("File: %s added\n", dir.Files[index-fileStart])
-		downList = append(downList, raw(filepath.Join(name, dir.Route, dir.Files[index-fileStart])))
+		downList = append(downList, raw(fmt.Sprintf("%s/%s/%s", name, dir.Route, dir.Files[index-fileStart])))
 		return Tra(dir, name)
 
 	}
