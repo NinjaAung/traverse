@@ -7,10 +7,10 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // Dir is an embedded struct of folders in a repo
@@ -116,6 +116,7 @@ func updateJSON(filePath string, repo *Repo) error {
 	json.Truncate(0)
 	json.Write(repoJSON)
 	json.Close()
+
 	check(err)
 	return nil
 }
@@ -148,7 +149,7 @@ func ReadRecent(filePath string) error {
 	optionNum, _ := strconv.ParseInt(strings.TrimSpace(option), 10, 64)
 	updateJSON(filePath, repos[optionNum-1])
 	clear()
-	Tra(repos[optionNum-1].Dir)
+	Tra(repos[optionNum-1].Dir, repos[optionNum-1].Name)
 
 	return nil
 }
@@ -159,7 +160,7 @@ var (
 )
 
 //Tra this is an example of a traversal
-func Tra(dir Dir) func() {
+func Tra(dir Dir, name string) func() {
 	if len(path) == 0 {
 		path = append(path, dir)
 	}
@@ -178,18 +179,24 @@ func Tra(dir Dir) func() {
 	fmt.Printf("Have %d items to download\n", len(downList))
 	fmt.Print(": ")
 	option, _ := reader.ReadString('\n')
+	if option == "download" {
+		clear()
+		fmt.Printf("Downloading %d files in current dir\n", len(downList))
+		os.Exit(0)
+
+	}
 	optionNum, _ := strconv.ParseInt(strings.TrimSpace(option), 10, 64)
 	if optionNum == 0 {
 		// cd ..
 		if dir.Route == "master" {
 			fmt.Print("This is root")
 			clear()
-			return Tra(dir)
+			return Tra(dir, name)
 		}
 		clear()
 		path = path[:len(path)-1]
 		pop := path[len(path)-1]
-		return Tra(pop)
+		return Tra(pop, name)
 
 	} else if optionNum < int64(fileStart)+1 {
 		clear()
@@ -197,17 +204,17 @@ func Tra(dir Dir) func() {
 		fmt.Printf("Folder: %s\n", dir.Dirs[int(optionNum)-1].Name)
 		path = append(path, *dir.Dirs[int(optionNum)-1])
 		fmt.Println(len(path))
-		return Tra(*dir.Dirs[int(optionNum)-1])
+		return Tra(*dir.Dirs[int(optionNum)-1], name)
 
 	} else if optionNum >= int64(fileStart)+1 {
-		time.Sleep(time.Second * 5)
 		clear()
 		// add files
 		index := int(optionNum) - 1
 		fmt.Printf("File: %s added\n", dir.Files[index-fileStart])
-		return Tra(dir)
+		downList = append(downList, raw(filepath.Join(name, dir.Route, dir.Files[index-fileStart])))
+		return Tra(dir, name)
 
 	}
 	clear()
-	return Tra(dir)
+	return Tra(dir, name)
 }

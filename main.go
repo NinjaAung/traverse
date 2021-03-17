@@ -25,7 +25,7 @@ func main() {
 			panic(err)
 		}
 		repo.SaveToJSON(filePath)
-		traverse.Tra(repo.Dir)
+		traverse.Tra(repo.Dir, repo.Name)
 		os.Exit(0)
 	}
 	traverse.ReadRecent(filePath)
